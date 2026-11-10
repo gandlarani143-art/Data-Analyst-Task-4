@@ -1,1 +1,194 @@
+
+import pandas as pd
+import plotly.express as px
+import random
+import os
+
+# Create sample sales dataset
+random.seed(10)
+
+regions = ["North", "South", "East", "West"]
+categories = ["Electronics", "Clothing", "Furniture", "Food"]
+
+data = []
+
+for i in range(100):
+    sales = random.randint(500, 10000)
+    cost = random.randint(200, sales - 100)
+
+    data.append({
+        "Order_ID": i + 1,
+        "Date": pd.Timestamp("2026-01-01")
+                 + pd.Timedelta(days=random.randint(0, 300)),
+        "Region": random.choice(regions),
+        "Category": random.choice(categories),
+        "Sales": sales,
+        "Profit": sales - cost
+    })
+
+df = pd.DataFrame(data)
+
+# Save dataset
+df.to_csv("sales_data.csv", index=False)
+
+# Calculate KPIs
+total_sales = df["Sales"].sum()
+total_profit = df["Profit"].sum()
+total_orders = len(df)
+growth = (
+    (df["Sales"].sum() - df["Sales"].mean())
+    / df["Sales"].mean()
+) * 100
+
+# Monthly sales
+df["Month"] = df["Date"].dt.to_period("M").astype(str)
+
+monthly = df.groupby("Month")["Sales"].sum().reset_index()
+
+# Category sales
+category_sales = (
+    df.groupby("Category")["Sales"]
+    .sum().reset_index()
+)
+
+# Region sales
+region_sales = (
+    df.groupby("Region")["Sales"]
+    .sum().reset_index()
+)
+
+# Profit analysis
+profit_data = (
+    df.groupby("Category")["Profit"]
+    .sum().reset_index()
+)
+
+# Charts
+fig1 = px.line(
+    monthly,
+    x="Month",
+    y="Sales",
+    title="Monthly Sales Analysis",
+    markers=True
+)
+
+fig2 = px.bar(
+    category_sales,
+    x="Category",
+    y="Sales",
+    color="Category",
+    title="Category-wise Sales"
+)
+
+fig3 = px.pie(
+    region_sales,
+    names="Region",
+    values="Sales",
+    title="Region-wise Sales"
+)
+
+fig4 = px.bar(
+    profit_data,
+    x="Category",
+    y="Profit",
+    color="Category",
+    title="Category-wise Profit"
+)
+
+# Create HTML Dashboard
+html = f"""
+<html>
+<head>
+<title>Sales Dashboard</title>
+<style>
+body {{
+    font-family: Arial;
+    background: #f2f4f8;
+    padding: 20px;
+}}
+h1 {{
+    text-align: center;
+    color: #243b64;
+}}
+.cards {{
+    display: flex;
+    flex-wrap: wrap;
+    gap: 15px;
+}}
+.card {{
+    background: white;
+    padding: 20px;
+    border-radius: 10px;
+    flex: 1;
+    min-width: 150px;
+    text-align: center;
+}}
+.value {{
+    font-size: 25px;
+    color: #2471a3;
+    font-weight: bold;
+}}
+</style>
+</head>
+
+<body>
+
+<h1>SALES ANALYTICS DASHBOARD</h1>
+
+<div class="cards">
+
+<div class="card">
+<h3>Total Sales</h3>
+<p class="value">₹{total_sales:,}</p>
+</div>
+
+<div class="card">
+<h3>Total Profit</h3>
+<p class="value">₹{total_profit:,}</p>
+</div>
+
+<div class="card">
+<h3>Total Orders</h3>
+<p class="value">{total_orders}</p>
+</div>
+
+<div class="card">
+<h3>Sales Growth Index</h3>
+<p class="value">{growth:.2f}%</p>
+</div>
+
+</div>
+
+"""
+
+html += fig1.to_html(
+    full_html=False, include_plotlyjs="cdn"
+)
+html += fig2.to_html(
+    full_html=False, include_plotlyjs=False
+)
+html += fig3.to_html(
+    full_html=False, include_plotlyjs=False
+)
+html += fig4.to_html(
+    full_html=False, include_plotlyjs=False
+)
+
+html += """
+</body>
+</html>
+"""
+
+with open("sales_dashboard.html", "w", encoding="utf-8") as f:
+    f.write(html)
+
+print("================================")
+print(" SALES DASHBOARD CREATED ")
+print("================================")
+print("Total Sales:", total_sales)
+print("Total Profit:", total_profit)
+print("Total Orders:", total_orders)
+print("Dashboard saved successfully!")
+print("File: sales_dashboard.html")
+print("Dataset: sales_data.csv")
 # Data-Analyst-Task-4
